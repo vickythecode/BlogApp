@@ -10,9 +10,15 @@ const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const uploadMiddleware = multer({ dest: 'uploads/' });
 const fs = require('fs');
+const dotenv = require("dotenv")
+
+
+dotenv.config({
+  path:'../.env'
+})
+
 
 const salt = bcrypt.genSaltSync(10);
-const secret = 'asdfe45we45w345wegw345werjktjwertkj';
 
 app.use(cors({credentials:true,origin:'http://localhost:3000'}));
 app.use(express.json());
@@ -21,7 +27,7 @@ app.use('/uploads', express.static(__dirname + '/uploads'));
 
 async function DbConnect(){
   try {
-    const DbConnect = await mongoose.connect('mongodb+srv://vickyfdyf123:mernblog12@cluster0.tisgzwc.mongodb.net/');
+    const DbConnect = await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connected to DB")
   } catch (error) {
     console.log("FAILED TO CONNECT DATABASE",error); 
@@ -60,7 +66,7 @@ app.post('/login', async (req, res) => {
 
     if (passOk) {
       // Logged in
-      jwt.sign({ username, id: userDoc._id }, secret, {}, (err, token) => {
+      jwt.sign({ username, id: userDoc._id }, process.env.SECRET, {}, (err, token) => {
         if (err) throw err;
         res.cookie('token', token,{ httpOnly: true }).json({
           id: userDoc._id,
@@ -83,7 +89,7 @@ app.get('/profile', (req,res) => {
     return res.status(401).json('Token not provided');
   }
 
-  jwt.verify(token, secret, {}, (err,info) => {
+  jwt.verify(token, process.env.SECRET, {}, (err,info) => {
     if (err) throw err;
     res.json(info);
   });
@@ -109,7 +115,7 @@ app.post('/post', uploadMiddleware.single('file'), async (req, res) => {
     }
 
     const { token } = req.cookies;
-    jwt.verify(token, secret, {}, async (err, info) => {
+    jwt.verify(token, process.env.SECRET, {}, async (err, info) => {
       if (err) throw err;
       const { title, summary, content } = req.body;
       const postDoc = await Post.create({
@@ -142,7 +148,7 @@ app.put('/post', uploadMiddleware.single('file'), async (req, res) => {
     }
 
     const { token } = req.cookies;
-    jwt.verify(token, secret, {}, async (err, info) => {
+    jwt.verify(token, process.env.SECRET, {}, async (err, info) => {
       if (err) throw err;
       const { id, title, summary, content } = req.body;
       const postDoc = await Post.findById(id);
@@ -193,7 +199,7 @@ app.delete('/post/:id', async (req, res) => {
       return res.status(401).json('Token not provided');
     }
 
-    jwt.verify(token, secret, {}, async (err, info) => {
+    jwt.verify(token, process.env.SECRET, {}, async (err, info) => {
       if (err) throw err;
 
       const { id } = req.params;
